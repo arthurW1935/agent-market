@@ -1,0 +1,5 @@
+# Agent Market — agent-side deps (Python 3.11+; built/tested on 3.12)
+fastapi
+uvicorn
+httpx
+anthropic

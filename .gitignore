@@ -1,2 +1,4 @@
 # Local Claude Code workspace settings
 .claude/
+CLAUDE.md.venv/
+__pycache__/
