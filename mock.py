@@ -38,10 +38,12 @@ DELIVERABLE = ("SolarPeak 20W Trail Charger — product brief.\n\nBuilt for hike
                "best in class. SolarPeak: sunlight in, adventure on. (Word count: 198)")
 
 T = "tsk_demo1"
+# Non-task events (agent_registered, deposit) carry task_id null and appear
+# only in the global /events stream — DESIGN.md §3.
 EVENTS = [
-    {"task_id": T, "type": "agent_registered", "payload": SLOPPY, "ts": "2026-08-08T11:00:01Z"},
-    {"task_id": T, "type": "agent_registered", "payload": DILIGENT, "ts": "2026-08-08T11:00:03Z"},
-    {"task_id": T, "type": "deposit", "payload": {"owner": "buyer", "amount": 200, "balance": 200}, "ts": "2026-08-08T11:00:10Z"},
+    {"task_id": None, "type": "agent_registered", "payload": SLOPPY, "ts": "2026-08-08T11:00:01Z"},
+    {"task_id": None, "type": "agent_registered", "payload": DILIGENT, "ts": "2026-08-08T11:00:03Z"},
+    {"task_id": None, "type": "deposit", "payload": {"owner": "buyer", "amount": 200, "balance": 200}, "ts": "2026-08-08T11:00:10Z"},
     {"task_id": T, "type": "task_posted", "payload": {"spec": "Research and write a 200-word product brief on a solar-powered phone charger for outdoor enthusiasts. Cite at least 2 real sources.", "bounty": 100}, "ts": "2026-08-08T11:00:12Z"},
     {"task_id": T, "type": "rubric_proposed", "payload": {"rubric": RUBRIC}, "ts": "2026-08-08T11:00:15Z"},
     {"task_id": T, "type": "rubric_confirmed", "payload": {"amount_due": 100}, "ts": "2026-08-08T11:00:20Z"},
@@ -60,7 +62,7 @@ EVENTS = [
         ],
         "overall": False,
         "fix_list": ["Cut to 220 words", "Add 2 named sources", "Remove filler phrases"]}, "ts": "2026-08-08T11:00:41Z"},
-    {"task_id": T, "type": "rerouted", "payload": {"from_agent": "agt_sloppy", "to_agent": "agt_diligent", "attempt": 2}, "ts": "2026-08-08T11:00:43Z"},
+    {"task_id": T, "type": "rerouted", "payload": {"from_agent": "agt_sloppy", "to_agent": "agt_diligent", "attempt": 2, "reason": "verdict_failed"}, "ts": "2026-08-08T11:00:43Z"},
     {"task_id": T, "type": "assigned", "payload": {"agent_id": "agt_diligent", "agent_name": "diligent-writer"}, "ts": "2026-08-08T11:00:44Z"},
     {"task_id": T, "type": "dispatched", "payload": {"agent_id": "agt_diligent", "agent_name": "diligent-writer"}, "ts": "2026-08-08T11:00:45Z"},
     {"task_id": T, "type": "deliverable_submitted", "payload": {"agent_id": "agt_diligent"}, "ts": "2026-08-08T11:00:54Z"},
@@ -94,21 +96,29 @@ def serve():
         return {"id": task_id, "spec": EVENTS[3]["payload"]["spec"], "bounty": 100,
                 "status": "SETTLED", "rubric": RUBRIC, "assigned_agent": "agt_diligent",
                 "attempts": ["agt_sloppy", "agt_diligent"], "created_at": EVENTS[3]["ts"],
-                "events": EVENTS, "deliverable": DELIVERABLE}
+                "events": [e for e in EVENTS if e["task_id"] == task_id],
+                "deliverable": DELIVERABLE}
 
     @app.get("/tasks/{task_id}/deliverable")
     async def deliverable(task_id: str):
         return {"content": DELIVERABLE}
 
-    @app.get("/events/{task_id}")
-    async def events(task_id: str):
+    def sse_replay(events):
         async def stream():
-            for ev in EVENTS:
+            for ev in events:
                 yield f"data: {json.dumps(ev)}\n\n"
                 await asyncio.sleep(1.5)
         return StreamingResponse(stream(), media_type="text/event-stream")
 
-    print("mock platform on :8000 — SSE replay at /events/tsk_demo1", flush=True)
+    @app.get("/events")
+    async def events_global():  # the UI's single subscription (DESIGN.md §3, §8)
+        return sse_replay(EVENTS)
+
+    @app.get("/events/{task_id}")
+    async def events_task(task_id: str):  # per-task stream per CONTRACTS §4
+        return sse_replay([e for e in EVENTS if e["task_id"] == task_id])
+
+    print("mock platform on :8000 — SSE replay at /events (global) and /events/tsk_demo1", flush=True)
     uvicorn.run(app, host="127.0.0.1", port=8000)
 
 
