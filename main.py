@@ -18,7 +18,16 @@ from mcp_server import mcp
 
 # Streamable HTTP sub-app; parent lifespan must run its session manager
 # (Starlette does not run mounted sub-apps' lifespans).
-_mcp_app = mcp.streamable_http_app(streamable_http_path="/", stateless_http=True)
+# DNS-rebinding protection off: the default only allows localhost Host headers,
+# which 421s any tunneled/deployed access to /mcp (ngrok, fly, ...). This is a
+# public marketplace endpoint, not a local-only server.
+from mcp.server.transport_security import TransportSecuritySettings
+
+_mcp_app = mcp.streamable_http_app(
+    streamable_http_path="/",
+    stateless_http=True,
+    transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+)
 
 
 @asynccontextmanager
