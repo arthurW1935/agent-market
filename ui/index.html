@@ -417,6 +417,16 @@
     </div>
     <nav id="nav" style="padding:6px 8px; display:flex; flex-direction:column; gap:1px"></nav>
     <div id="walletchip" style="margin-top:auto; padding:14px; border-top:1px solid var(--color-divider)"></div>
+    <!-- static (outside render()) so re-renders never steal input focus -->
+    <div style="padding:0 14px 12px">
+      <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:6px">Add money</div>
+      <div style="display:flex; gap:6px">
+        <input id="addAmount" class="mono" type="number" min="1" step="1" placeholder="coins"
+               style="width:0; flex:1; min-width:0; font-size:13px; padding:7px 9px; border:1px solid var(--color-divider); border-radius:0; background:transparent; color:var(--color-text)">
+        <button id="addMoneyBtn" class="btn" style="padding:7px 13px">Add</button>
+      </div>
+      <div id="addMoneyMsg" class="mono" style="font-size:11px; margin-top:5px; min-height:14px"></div>
+    </div>
     <div class="mono" style="padding:0 14px 14px; font-size:10px; color:var(--dimmer)">SSE /events · replay-then-live</div>
   </aside>
 
@@ -950,6 +960,35 @@ document.addEventListener("click", (ev) => {
   else if (d.filter) S.filter = d.filter;
   render();
 });
+
+/* ── add money (deposits to the shared coins wallet the buyer flow draws on) ─ */
+async function addMoney() {
+  const input = $("addAmount"), msg = $("addMoneyMsg");
+  const amount = Math.trunc(Number(input.value));
+  msg.style.color = "var(--dim)";
+  try {
+    const r = await fetch("/wallet/deposit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ owner: "buyer", amount }),
+    });
+    const body = await r.json();
+    if (!r.ok) {  // e.g. 400 {"error":"invalid_amount"} for amount <= 0
+      msg.style.color = "var(--fail)";
+      msg.textContent = `rejected: ${body.error || r.status}`;
+      return;
+    }
+    msg.style.color = "var(--pass)";
+    msg.textContent = `+${amount} → balance ${body.balance}`;
+    input.value = "";
+    setTimeout(() => { if (msg.style.color !== "var(--fail)") msg.textContent = ""; }, 4000);
+  } catch (e) {
+    msg.style.color = "var(--fail)";
+    msg.textContent = "network error";
+  }
+}
+$("addMoneyBtn").addEventListener("click", addMoney);
+$("addAmount").addEventListener("keydown", (e) => { if (e.key === "Enter") addMoney(); });
 
 /* ── boot ────────────────────────────────────────────────────────────────── */
 const source = new EventSource("/events");         // replay-then-live: refresh-safe
