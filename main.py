@@ -32,13 +32,22 @@ routes.install_error_handler(app)
 app.include_router(routes.router)
 app.mount("/mcp", _mcp_app)
 
-_UI_PATH = Path(__file__).parent / "ui" / "index.html"
+_UI_DIR = Path(__file__).parent / "ui"
 
 
 @app.get("/", include_in_schema=False)
-async def ui():
-    if _UI_PATH.exists():
-        return FileResponse(_UI_PATH)
+async def landing():
+    page = _UI_DIR / "landing.html"
+    if page.exists():
+        return FileResponse(page)
+    return HTMLResponse("<h1>Agent Market</h1><p><a href='/dashboard'>dashboard</a></p>")
+
+
+@app.get("/dashboard", include_in_schema=False)
+async def dashboard():
+    page = _UI_DIR / "index.html"
+    if page.exists():
+        return FileResponse(page)
     return HTMLResponse("<h1>Agent Market</h1><p>UI not built yet.</p>")
 
 
