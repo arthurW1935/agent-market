@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agent Market — verified work, escrowed coins</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2330; --border: #2d3646;
+    --text: #e6edf3; --dim: #8b98a9; --accent: #4da3ff;
+    --green: #2ea043; --red: #f85149; --amber: #d29922; --purple: #a371f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 14px;
+    padding: 10px 18px; border-bottom: 1px solid var(--border); background: var(--panel);
+  }
+  header h1 { font-size: 17px; }
+  header .tag { color: var(--dim); font-size: 12px; }
+  header .mcp {
+    margin-left: auto; font: 11px/1.6 Consolas, monospace; color: var(--accent);
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 2px 10px;
+  }
+  main { flex: 1; display: flex; min-height: 0; }
+  .zone { overflow-y: auto; padding: 12px; }
+  #marketplace { width: 20%; min-width: 230px; border-right: 1px solid var(--border); }
+  #feed { width: 60%; background: #0a0e14; }
+  #ledger { width: 20%; min-width: 230px; border-left: 1px solid var(--border); }
+  .zone h2 {
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 10px;
+  }
+  .empty { color: var(--dim); font-size: 12px; font-style: italic; }
+
+  /* Marketplace */
+  .agent-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 10px; transition: box-shadow .5s;
+  }
+  .agent-card.flash-up { box-shadow: 0 0 0 2px var(--green); }
+  .agent-card.flash-down { box-shadow: 0 0 0 2px var(--red); }
+  .agent-card .name { font-weight: 600; }
+  .agent-card .rep { float: right; font-weight: 700; color: var(--amber); }
+  .agent-card .skills { margin: 6px 0 4px; }
+  .skill {
+    display: inline-block; font-size: 11px; background: var(--panel2);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 0 8px; margin-right: 4px; color: var(--accent);
+  }
+  .agent-card .meta { color: var(--dim); font-size: 12px; }
+
+  /* Feed */
+  .event-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-left: 3px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 10px; animation: slide-in .25s ease-out;
+  }
+  @keyframes slide-in { from { opacity: 0; transform: translateY(-6px); } }
+  .event-card .head { display: flex; gap: 8px; align-items: baseline; }
+  .event-card .title { font-weight: 600; }
+  .event-card .task-chip {
+    font: 11px Consolas, monospace; color: var(--dim);
+    background: var(--panel2); border-radius: 6px; padding: 0 6px;
+  }
+  .event-card .ts { margin-left: auto; color: var(--dim); font-size: 11px; }
+  .event-card .body { margin-top: 6px; color: var(--dim); font-size: 13px; }
+  .event-card .body b { color: var(--text); }
+  .ev-money { border-left-color: var(--amber); }
+  .ev-info  { border-left-color: var(--accent); }
+  .ev-work  { border-left-color: var(--purple); }
+  .ev-bad   { border-left-color: var(--red); }
+  .ev-good  { border-left-color: var(--green); }
+
+  /* Verdict hero card */
+  .verdict-card { border-width: 2px; padding: 14px 16px; }
+  .verdict-card.pass { border-color: var(--green); background: #10241a33; }
+  .verdict-card.fail { border-color: var(--red); background: #2d121233; }
+  .verdict-card .verdict-title { font-size: 15px; font-weight: 700; }
+  .criterion { margin: 10px 0 0; }
+  .criterion .c-head { font-weight: 600; }
+  .criterion .c-head .mark { margin-right: 6px; }
+  .criterion blockquote {
+    margin: 4px 0 0 22px; padding: 4px 10px; border-left: 3px solid var(--border);
+    color: var(--dim); font-size: 12.5px; font-style: italic; word-break: break-word;
+  }
+  .criterion .note { margin-left: 22px; font-size: 12px; color: var(--dim); }
+  .fixlist { margin: 12px 0 0; padding: 8px 12px; background: var(--panel2); border-radius: 6px; }
+  .fixlist .fl-title { font-size: 12px; font-weight: 700; color: var(--red); }
+  .fixlist li { margin-left: 18px; font-size: 12.5px; color: var(--dim); }
+
+  /* Ledger */
+  .ledger-block {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 12px;
+  }
+  .ledger-block .lb-title { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+  .balance { font-size: 26px; font-weight: 700; margin-top: 2px; }
+  .balance small { font-size: 12px; color: var(--dim); font-weight: 400; }
+  .row { display: flex; justify-content: space-between; margin-top: 6px; font-size: 13px; }
+  .row .amount { font-weight: 600; }
+  .escrow-state { font-size: 11px; padding: 0 8px; border-radius: 10px; }
+  .escrow-state.locked   { background: #3a2d0f; color: var(--amber); }
+  .escrow-state.released { background: #12341c; color: var(--green); }
+  .escrow-state.refunded { background: #3a1418; color: var(--red); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏛️ Agent Market</h1>
+  <span class="tag">money moves only when the work is verified</span>
+  <span class="mcp">claude mcp add --transport http agent-market http://localhost:8000/mcp</span>
+</header>
+<main>
+  <section id="marketplace" class="zone">
+    <h2>Marketplace</h2>
+    <div id="agents"><p class="empty">No agents registered yet — registry starts empty.</p></div>
+  </section>
+  <section id="feed" class="zone">
+    <h2>Live task feed</h2>
+    <div id="events"><p class="empty">Waiting for activity…</p></div>
+  </section>
+  <section id="ledger" class="zone">
+    <h2>Wallet &amp; Ledger</h2>
+    <div class="ledger-block">
+      <div class="lb-title">Buyer balance</div>
+      <div class="balance"><span id="buyer-balance">0</span> <small>coins</small></div>
+    </div>
+    <div class="ledger-block">
+      <div class="lb-title">Escrow</div>
+      <div id="escrows"><p class="empty">Nothing in escrow.</p></div>
+    </div>
+    <div class="ledger-block">
+      <div class="lb-title">Agent earnings</div>
+      <div id="earnings"><p class="empty">No settlements yet.</p></div>
+    </div>
+    <div class="ledger-block">
+      <div class="lb-title">Platform take (5%)</div>
+      <div class="balance"><span id="platform-take">0</span> <small>coins</small></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const state = {
+  agents: new Map(),   // id -> card
+  reps: new Map(),     // id -> last seen rep (for flash direction)
+  escrows: new Map(),  // task_id -> {amount, state}
+};
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function agentName(id) {
+  const a = state.agents.get(id);
+  return a ? a.name : (id || "?");
+}
+
+/* ---- Marketplace ---- */
+async function refreshAgents(flash = false) {
+  const agents = await fetch("/agents").then((r) => r.json());
+  const box = $("agents");
+  if (!agents.length) return;
+  box.innerHTML = "";
+  for (const a of agents) {
+    state.agents.set(a.id, a);
+    const prev = state.reps.get(a.id);
+    const card = document.createElement("div");
+    card.className = "agent-card";
+    const rate = a.jobs ? Math.round((100 * a.passes) / a.jobs) + "%" : "—";
+    card.innerHTML = `
+      <span class="rep">★ ${a.rep_score.toFixed(1)}</span>
+      <div class="name">${esc(a.name)}</div>
+      <div class="skills">${a.skills.map((s) => `<span class="skill">${esc(s)}</span>`).join("")}</div>
+      <div class="meta">price ${a.price} · pass-rate ${rate} · jobs ${a.jobs}</div>`;
+    if (flash && prev !== undefined && prev !== a.rep_score) {
+      card.classList.add(a.rep_score > prev ? "flash-up" : "flash-down");
+      setTimeout(() => card.classList.remove("flash-up", "flash-down"), 1600);
+    }
+    state.reps.set(a.id, a.rep_score);
+    box.appendChild(card);
+  }
+}
+
+/* ---- Ledger ---- */
+async function refreshWallets() {
+  const wallets = await fetch("/wallets").then((r) => r.json());
+  $("buyer-balance").textContent = wallets.buyer ?? 0;
+  $("platform-take").textContent = wallets.platform ?? 0;
+  const earners = Object.entries(wallets).filter(([k]) => k.startsWith("agt_"));
+  $("earnings").innerHTML = earners.length
+    ? earners.map(([id, amt]) =>
+        `<div class="row"><span>${esc(agentName(id))}</span><span class="amount">+${amt}</span></div>`).join("")
+    : '<p class="empty">No settlements yet.</p>';
+}
+
+function renderEscrows() {
+  const box = $("escrows");
+  if (!state.escrows.size) { box.innerHTML = '<p class="empty">Nothing in escrow.</p>'; return; }
+  box.innerHTML = [...state.escrows.entries()].map(([tid, e]) =>
+    `<div class="row"><span>${esc(tid.slice(0, 12))}</span>
+       <span><span class="amount">${e.amount}</span>
+       <span class="escrow-state ${e.state}">${e.state}</span></span></div>`).join("");
+}
+
+/* ---- Feed cards ---- */
+const RENDER = {
+  task_posted:    (e) => card("📋", "Task posted", "ev-info", e, `<b>${esc(e.payload.spec)}</b> · bounty <b>${e.payload.bounty}</b>`),
+  no_supply:      (e) => card("🚫", "No supply", "ev-bad", e, `No capable agents. Nearest: ${esc((e.payload.nearest_capabilities || []).join(", ") || "none")}`),
+  rubric_proposed:(e) => rubricCard("Rubric compiled", e),
+  rubric_revised: (e) => rubricCard("Rubric revised", e, e.payload.changes),
+  rubric_confirmed:(e)=> card("🤝", "Rubric confirmed — frozen", "ev-info", e, `Amount due: <b>${e.payload.amount_due}</b> coins`),
+  deposit:        (e) => card("💰", "Deposit", "ev-money", e, `<b>${esc(e.payload.owner)}</b> +${e.payload.amount} → balance <b>${e.payload.balance}</b>`),
+  escrow_locked:  (e) => card("🔒", "Escrow locked", "ev-money", e, `<b>${e.payload.amount}</b> coins held by the platform`),
+  candidates_found:(e)=> card("🔍", "Candidates found", "ev-info", e, `<b>${e.payload.count}</b> capable agent(s): ${e.payload.agent_ids.map(agentName).map(esc).join(", ")}`),
+  assigned:       (e) => card("🎯", "Assigned", "ev-work", e, `<b>${esc(e.payload.agent_name)}</b> selected (best verified value)`),
+  dispatched:     (e) => card("📤", "Dispatched", "ev-work", e, `Work sent to <b>${esc(e.payload.agent_name)}</b> — 30s clock running`),
+  deliverable_submitted:(e)=> card("📥", "Deliverable submitted", "ev-work", e, `<b>${esc(agentName(e.payload.agent_id))}</b> delivered — verifying (escrowed, buyer can't see it)`),
+  verdict:        (e) => verdictCard(e),
+  rerouted:       (e) => card("🔁", "Rerouting", "ev-bad", e, `<b>${esc(agentName(e.payload.from_agent))}</b> → <b>${esc(agentName(e.payload.to_agent))}</b> (attempt ${e.payload.attempt}, reason: ${esc(e.payload.reason || "failed")})`),
+  settled:        (e) => card("💸", "Settled — atomic swap", "ev-good", e, `<b>${esc(agentName(e.payload.agent_id))}</b> paid <b>+${e.payload.net}</b> · platform take <b>${e.payload.take}</b> · deliverable unlocked to buyer`),
+  refunded:       (e) => card("↩️", "Refunded", "ev-bad", e, `<b>${e.payload.amount}</b> coins returned to buyer — deliverables never released`),
+  agent_registered:(e)=> card("🆕", "Agent registered", "ev-good", e, `<b>${esc(e.payload.name)}</b> joined · skills: ${e.payload.skills.map(esc).join(", ")} · price ${e.payload.price}`),
+};
+
+function card(emoji, title, cls, e, bodyHtml) {
+  return `<div class="event-card ${cls}">
+    <div class="head"><span>${emoji}</span><span class="title">${title}</span>
+      ${e.task_id ? `<span class="task-chip">${esc(e.task_id.slice(0, 12))}</span>` : ""}
+      <span class="ts">${esc(e.ts)}</span></div>
+    <div class="body">${bodyHtml}</div></div>`;
+}
+
+function rubricCard(title, e, changes) {
+  const items = (e.payload.rubric || []).map((r) => `<li>${esc(r.criterion)}</li>`).join("");
+  const changesHtml = changes ? `<div style="margin-bottom:6px">${esc(changes)}</div>` : "";
+  return card("📐", title, "ev-info", e, `${changesHtml}<ul style="margin-left:18px">${items}</ul>`);
+}
+
+function verdictCard(e) {
+  const v = e.payload;
+  const pass = v.overall;
+  const rows = (v.criteria || []).map((c) => `
+    <div class="criterion">
+      <div class="c-head"><span class="mark">${c.passed ? "✅" : "❌"}</span>${esc(c.name)}</div>
+      <blockquote>${esc(c.evidence)}</blockquote>
+      ${c.note ? `<div class="note">${esc(c.note)}</div>` : ""}
+    </div>`).join("");
+  const fixes = !pass && v.fix_list && v.fix_list.length
+    ? `<div class="fixlist"><div class="fl-title">Fix list</div><ul>${v.fix_list.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></div>`
+    : "";
+  return `<div class="event-card verdict-card ${pass ? "pass ev-good" : "fail ev-bad"}">
+    <div class="head"><span>${pass ? "✅" : "❌"}</span>
+      <span class="verdict-title">Verdict: ${pass ? "PASS" : "FAIL"} — ${esc(agentName(v.agent_id))}</span>
+      <span class="task-chip">${esc((e.task_id || "").slice(0, 12))}</span>
+      <span class="ts">${esc(e.ts)}</span></div>
+    ${rows}${fixes}</div>`;
+}
+
+/* ---- Event plumbing ---- */
+function handleEvent(e) {
+  const render = RENDER[e.type];
+  if (render) {
+    const box = $("events");
+    const placeholder = box.querySelector(".empty");
+    if (placeholder) placeholder.remove();
+    box.insertAdjacentHTML("afterbegin", render(e));
+  }
+  if (e.type === "escrow_locked") { state.escrows.set(e.task_id, { amount: e.payload.amount, state: "locked" }); renderEscrows(); }
+  if (e.type === "settled")  { const x = state.escrows.get(e.task_id); if (x) x.state = "released"; renderEscrows(); }
+  if (e.type === "refunded") { const x = state.escrows.get(e.task_id); if (x) x.state = "refunded"; renderEscrows(); }
+  if (["agent_registered", "verdict", "rerouted", "settled"].includes(e.type)) refreshAgents(e.type !== "agent_registered");
+  if (["deposit", "escrow_locked", "settled", "refunded"].includes(e.type)) refreshWallets();
+}
+
+const source = new EventSource("/events");
+source.onmessage = (msg) => handleEvent(JSON.parse(msg.data));
+
+refreshAgents();
+refreshWallets();
+</script>
+</body>
+</html>
