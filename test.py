@@ -1,10 +1,11 @@
-"""mock.py — offline demo insurance. Impersonates the platform (:8000) for the UI.
+"""test.py — offline demo insurance. Impersonates the platform (:8000) for the UI.
 
 Replays the full CONTRACTS §6 choreography (register ×2 → task → rubric → fund →
 sloppy FAIL → reroute → diligent PASS → settle) with no LLMs, no agents, no wifi.
+Testing/fallback only — never run alongside the real platform (both bind :8000).
 
-    python mock.py            # serve canned /agents, /tasks/{id}, SSE /events/{id} on :8000
-    python mock.py --dump     # print the raw JSON event list (UI can load it statically)
+    python test.py            # serve canned /agents, /tasks/{id}, SSE /events on :8000
+    python test.py --dump     # print the raw JSON event list (UI can load it statically)
 """
 import asyncio
 import json
