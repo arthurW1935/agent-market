@@ -14,7 +14,10 @@ from contextlib import asynccontextmanager
 import httpx
 import uvicorn
 from anthropic import AsyncAnthropic
+from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI
+
+load_dotenv()  # reads ANTHROPIC_API_KEY (and optional PLATFORM_URL) from .env
 
 PLATFORM_URL = os.environ.get("PLATFORM_URL", "http://localhost:8000")
 MODEL = "claude-haiku-4-5"
