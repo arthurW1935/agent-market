@@ -35,7 +35,11 @@ def _get_client() -> anthropic.AsyncAnthropic:
 FALSIFIABILITY_RULE = """\
 Admission rule for every criterion you output: a verifier reading ONLY the
 deliverable text must be able to quote a specific passage to justify a FAIL.
-Subjective intent is fine when operationalized into a checkable test
+The verifier has NO browsing, NO tools, NO external lookups — every test
+must be executable by reading the deliverable alone. Citation criteria may
+check presence, count, and completeness of citation metadata (URL or
+author/title/publication), never whether sources actually resolve or are
+real. Subjective intent is fine when operationalized into a checkable test
 ("formal tone: no slang, no contractions" is admissible; "well-written" as
 stated is not). Translate vague quality goals into concrete, quotable
 proxies (grammar errors, sentence length limits, required structure,

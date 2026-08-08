@@ -35,23 +35,29 @@ SLOPPY_CONTENT = (
     "disagree with that statement no matter what happens ever. Trust me."
 )
 
+# ~200 words, robust against the FAMILY of rubrics live Sonnet compiles for
+# this spec: names the product + "code review automation" in sentence one,
+# multiple paragraphs (structure criteria), two citations with full metadata,
+# formal tone, no contractions, short sentences, clean spelling, covers
+# features/audience/pricing/integrations/benefits.
 DILIGENT_CONTENT = (
-    "Product brief: X is a workflow tool that verifiably cuts review time for small teams.\n"
-    "X targets engineering teams of five to fifty people. It automates review assignment. "
-    "It tracks turnaround metrics. Independent trials report a thirty percent cycle reduction "
-    "(https://example.com/study-2026). Pricing starts at ten dollars per seat "
-    "(https://example.com/pricing). "
-    + "It integrates with common code hosts. Setup takes under an hour. "
-    "Teams keep their existing branching model. Reviewers get balanced queues. "
-    "Managers get weekly reports. Data stays in the customer cloud. "
-    "Support responds within one business day. A free tier covers three users. "
-    "Annual billing saves twenty percent. Migration tooling imports history. "
-    "The roadmap adds audit logs next quarter. Early adopters praise the onboarding flow. "
-    "Documentation covers every endpoint. Uptime exceeded targets last year. "
-    "Security reviews run quarterly. The team ships weekly. Customers renew at high rates. "
-    "X suits teams that want faster reviews without process change. "
-    "It earns its seat cost within one sprint. Choose X when review latency hurts delivery. "
-    "The trial needs no credit card. Install it today and measure the difference this week."
+    "Nimbus is a code review automation platform that shortens review turnaround for small "
+    "engineering teams. The product targets teams of five to fifty engineers. It assigns "
+    "reviewers automatically, balances review queues, and tracks turnaround metrics in a "
+    "single dashboard. An independent 2026 benchmark reported a thirty percent reduction in "
+    "cycle time after adoption (Chen and Rivera, Automated Review Assignment at Scale, "
+    "Journal of Software Practice, 2026, https://jsp-journal.org/chen-rivera-2026).\n\n"
+    "Pricing starts at ten dollars per seat each month, and a free tier covers three users "
+    "(https://getnimbus.dev/pricing). Setup takes under one hour and requires no change to "
+    "existing branching models. The platform integrates with all major code hosts. Managers "
+    "receive weekly reports on review load and latency. Customer data remains in the "
+    "customer cloud, and security reviews run quarterly. Support responds within one "
+    "business day. Migration tooling imports existing review history in minutes. Annual "
+    "billing saves twenty percent.\n\n"
+    "Early adopters praise the onboarding flow and the balanced reviewer queues. "
+    "Documentation covers every endpoint and workflow. The roadmap adds audit logs and "
+    "compliance exports next quarter. Teams that suffer from slow reviews can measure the "
+    "difference within one sprint. The trial requires no credit card and installs today."
 )
 
 
@@ -75,12 +81,12 @@ def make_stub(name: str, content: str, delay: float) -> FastAPI:
     return stub
 
 
-async def run_stub(app: FastAPI, port: int) -> uvicorn.Server:
+async def run_stub(app: FastAPI, port: int) -> tuple[uvicorn.Server, asyncio.Task]:
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error"))
-    asyncio.get_running_loop().create_task(server.serve())
+    task = asyncio.get_running_loop().create_task(server.serve())
     while not server.started:
         await asyncio.sleep(0.05)
-    return server
+    return server, task
 
 
 def check(label: str, condition: bool, detail: str = "") -> None:
@@ -92,9 +98,19 @@ def check(label: str, condition: bool, detail: str = "") -> None:
 async def main(live: bool) -> None:
     sloppy_app = make_stub("sloppy", SLOPPY_CONTENT, delay=1.0)
     diligent_app = make_stub("diligent", DILIGENT_CONTENT, delay=1.0)
-    await run_stub(sloppy_app, 8001)
-    await run_stub(diligent_app, 8002)
+    stubs = [await run_stub(sloppy_app, 8001), await run_stub(diligent_app, 8002)]
+    try:
+        await run_checks(live, sloppy_app, diligent_app)
+    finally:
+        # Graceful stub shutdown — otherwise loop teardown cancels the uvicorn
+        # lifespans mid-await and spams CancelledError tracebacks.
+        for server, task in stubs:
+            server.should_exit = True
+        for server, task in stubs:
+            await task
 
+
+async def run_checks(live: bool, sloppy_app: FastAPI, diligent_app: FastAPI) -> None:
     async with httpx.AsyncClient(base_url=PLATFORM, timeout=120) as client:
         # Demo choreography step 2: agents self-register.
         r = await client.post("/agents", json={
@@ -114,7 +130,8 @@ async def main(live: bool) -> None:
         check("deposit 200", r.json()["balance"] == 200)
 
         r = await client.post("/tasks", json={
-            "spec": "Research and write a 200-word product brief on X, citing at least 2 sources.",
+            "spec": "Research and write a 200-word product brief on Nimbus, a code review "
+                    "automation tool, citing at least 2 sources.",
             "bounty": 100})
         check("create -> 201 RUBRIC_DISCUSSION", r.status_code == 201
               and r.json()["status"] == "RUBRIC_DISCUSSION", str(r.status_code))
@@ -179,7 +196,7 @@ async def main(live: bool) -> None:
         # Deliverable unlocked to buyer only now.
         r = await client.get(f"/tasks/{task_id}/deliverable")
         check("deliverable unlocked after settle", r.status_code == 200
-              and r.json()["content"].startswith("Product brief"), str(r.status_code))
+              and r.json()["content"].startswith("Nimbus"), str(r.status_code))
 
     print("\nSMOKE PASSED — full fail -> reroute -> pass arc verified"
           + (" (live LLM)" if live else " (mock)"))

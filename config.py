@@ -2,9 +2,11 @@
 
 import os
 
-try:  # load .env (ANTHROPIC_API_KEY etc.) — same file the agents use
+try:  # load .env (ANTHROPIC_API_KEY etc.) — same file the agents use.
+    # utf-8-sig: Windows PowerShell writes a BOM, which would otherwise
+    # corrupt the first variable name into "﻿ANTHROPIC_API_KEY".
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(encoding="utf-8-sig")
 except ImportError:
     pass
 

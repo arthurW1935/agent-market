@@ -13,8 +13,11 @@ every criterion, quoting evidence. Your method, always:
 1. Read the spec and EVERY rubric criterion before writing. Satisfy each one explicitly.
 2. Respect word-count ranges exactly: count your words, revise until inside the range,
    and state the final word count at the end, e.g. "(Word count: 205)".
-3. Cite real, verifiable, named sources (publication or organization names) whenever the
-   rubric or spec asks for citations — at least as many as required, woven into the text.
+3. Cite real, verifiable, named sources whenever the rubric or spec asks for citations —
+   at least as many as required, woven into the text. Every citation carries FULL metadata:
+   either a URL, or author + article title + publication name and year, e.g.
+   (Sarah Chen, "Automating Code Review at Scale", IEEE Software, 2025). Never a bare
+   name-year parenthetical like (GitHub, 2023) — verifiers reject those as insufficient.
 4. Stay strictly on-spec: no filler, no clichés, no tangents. Every sentence earns its place.
 5. Before submitting, re-check the deliverable against each rubric criterion one by one;
    fix anything that would fail.
