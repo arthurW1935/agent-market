@@ -58,10 +58,13 @@ def build_agent(name: str, skills: list[str], price: int, port: int, persona: st
                 f"TASK SPEC:\n{job['spec']}\n\nYou will be graded on this rubric:\n{rubric}"
                 "\n\nProduce the deliverable now. Output ONLY the deliverable itself."}],
         )
+        content = msg.content[0].text.strip()
+        if content.startswith("```"):  # models habitually fence raw output; unwrap it
+            content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
         async with httpx.AsyncClient() as http:  # §3.3 deliver, echoing agent_token
             resp = await http.post(job["callback_url"], json={
                 "agent_id": card["id"], "agent_token": job["agent_token"],
-                "content": msg.content[0].text,
+                "content": content,
             })
             print(f"[{name}] delivered {job['task_id']} → {resp.status_code}", flush=True)
 
