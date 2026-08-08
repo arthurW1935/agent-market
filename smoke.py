@@ -35,28 +35,29 @@ SLOPPY_CONTENT = (
     "disagree with that statement no matter what happens ever. Trust me."
 )
 
-# ~200 words, no separate title line (first sentence doubles as the summary,
-# so word counts land in range whether or not a grader excludes headers),
-# two citations with full metadata, formal tone, no contractions, short
-# sentences, clean spelling — robust against typical live-compiled rubrics.
+# ~200 words, robust against the FAMILY of rubrics live Sonnet compiles for
+# this spec: names the product + "code review automation" in sentence one,
+# multiple paragraphs (structure criteria), two citations with full metadata,
+# formal tone, no contractions, short sentences, clean spelling, covers
+# features/audience/pricing/integrations/benefits.
 DILIGENT_CONTENT = (
-    "Nimbus is a code review workflow platform that shortens review turnaround for small "
+    "Nimbus is a code review automation platform that shortens review turnaround for small "
     "engineering teams. The product targets teams of five to fifty engineers. It assigns "
     "reviewers automatically, balances review queues, and tracks turnaround metrics in a "
     "single dashboard. An independent 2026 benchmark reported a thirty percent reduction in "
     "cycle time after adoption (Chen and Rivera, Automated Review Assignment at Scale, "
-    "Journal of Software Practice, 2026, https://jsp-journal.org/chen-rivera-2026). Pricing "
-    "starts at ten dollars per seat each month, and a free tier covers three users "
-    "(https://getx.dev/pricing). Setup takes under one hour and requires no change to "
+    "Journal of Software Practice, 2026, https://jsp-journal.org/chen-rivera-2026).\n\n"
+    "Pricing starts at ten dollars per seat each month, and a free tier covers three users "
+    "(https://getnimbus.dev/pricing). Setup takes under one hour and requires no change to "
     "existing branching models. The platform integrates with all major code hosts. Managers "
     "receive weekly reports on review load and latency. Customer data remains in the "
     "customer cloud, and security reviews run quarterly. Support responds within one "
     "business day. Migration tooling imports existing review history in minutes. Annual "
-    "billing saves twenty percent. Early adopters praise the onboarding flow and the "
-    "balanced reviewer queues. Documentation covers every endpoint and workflow. The "
-    "roadmap adds audit logs and compliance exports next quarter. Teams that suffer from "
-    "slow reviews can measure the difference within one sprint. The trial requires no "
-    "credit card and installs today."
+    "billing saves twenty percent.\n\n"
+    "Early adopters praise the onboarding flow and the balanced reviewer queues. "
+    "Documentation covers every endpoint and workflow. The roadmap adds audit logs and "
+    "compliance exports next quarter. Teams that suffer from slow reviews can measure the "
+    "difference within one sprint. The trial requires no credit card and installs today."
 )
 
 
