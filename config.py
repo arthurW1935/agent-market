@@ -2,6 +2,12 @@
 
 import os
 
+try:  # load .env (ANTHROPIC_API_KEY etc.) — same file the agents use
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 RUBRIC_MODEL = "claude-sonnet-4-6"
 VERIFIER_MODEL = "claude-opus-5"
 
