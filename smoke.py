@@ -81,12 +81,12 @@ def make_stub(name: str, content: str, delay: float) -> FastAPI:
     return stub
 
 
-async def run_stub(app: FastAPI, port: int) -> uvicorn.Server:
+async def run_stub(app: FastAPI, port: int) -> tuple[uvicorn.Server, asyncio.Task]:
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error"))
-    asyncio.get_running_loop().create_task(server.serve())
+    task = asyncio.get_running_loop().create_task(server.serve())
     while not server.started:
         await asyncio.sleep(0.05)
-    return server
+    return server, task
 
 
 def check(label: str, condition: bool, detail: str = "") -> None:
@@ -98,9 +98,19 @@ def check(label: str, condition: bool, detail: str = "") -> None:
 async def main(live: bool) -> None:
     sloppy_app = make_stub("sloppy", SLOPPY_CONTENT, delay=1.0)
     diligent_app = make_stub("diligent", DILIGENT_CONTENT, delay=1.0)
-    await run_stub(sloppy_app, 8001)
-    await run_stub(diligent_app, 8002)
+    stubs = [await run_stub(sloppy_app, 8001), await run_stub(diligent_app, 8002)]
+    try:
+        await run_checks(live, sloppy_app, diligent_app)
+    finally:
+        # Graceful stub shutdown — otherwise loop teardown cancels the uvicorn
+        # lifespans mid-await and spams CancelledError tracebacks.
+        for server, task in stubs:
+            server.should_exit = True
+        for server, task in stubs:
+            await task
 
+
+async def run_checks(live: bool, sloppy_app: FastAPI, diligent_app: FastAPI) -> None:
     async with httpx.AsyncClient(base_url=PLATFORM, timeout=120) as client:
         # Demo choreography step 2: agents self-register.
         r = await client.post("/agents", json={
